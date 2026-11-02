@@ -1,7 +1,7 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-02
- * Description: Home screen with Apple-inspired black gradient and frosted glass widget canvas.
+ * Description: Home screen featuring top frosted glass widget and dual side-by-side clear widgets.
  */
 
 import React from 'react';
@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Spacing, BottomTabInset } from '@/constants/theme';
 import { GlassWidget } from '@/components/hig/GlassWidget';
+import { ClearWidget } from '@/components/hig/ClearWidget';
 
 export default function HomeScreen() {
   return (
@@ -40,8 +41,14 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.content}>
-            {/* Empty Frosted Glass Widget */}
+            {/* Top Large Frosted Glass Widget */}
             <GlassWidget height={190} />
+
+            {/* Dual Side-by-Side Clear Widgets */}
+            <View style={styles.dualWidgetRow}>
+              <ClearWidget height={160} />
+              <ClearWidget height={160} />
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -63,7 +70,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
   },
   header: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
   },
   title: {
     fontSize: 34,
@@ -75,6 +82,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: Spacing.two,
+  },
+  dualWidgetRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
   },
 });
