@@ -1,44 +1,54 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-02
- * Description: Clean baseline home screen for Apex iOS application development.
+ * Description: Baseline home screen styled with a sleek Apple-inspired black gradient background.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppleHIGColors, Spacing, BottomTabInset } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 
 export default function HomeScreen() {
-  const scheme = useColorScheme();
-  const theme = AppleHIGColors[scheme === 'dark' ? 'dark' : 'light'];
-
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.systemBackground }]}
-      edges={['top', 'left', 'right']}
-    >
-      <View
-        style={[
-          styles.container,
-          {
-            paddingBottom: BottomTabInset + Spacing.four,
-          },
-        ]}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.label }]}>Home</Text>
-        </View>
+    <View style={styles.rootContainer}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#1c1c1e', '#0f0f11', '#000000']}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <View
+          style={[
+            styles.container,
+            {
+              paddingBottom: BottomTabInset + Spacing.four,
+            },
+          ]}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Home</Text>
+          </View>
 
-        <View style={styles.content}>
-          {/* Clean canvas area ready for feature implementation */}
+          <View style={styles.content}>
+            {/* Clean canvas area ready for feature implementation */}
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
   safeArea: {
     flex: 1,
   },
@@ -54,6 +64,7 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: '800',
     letterSpacing: -1,
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,
