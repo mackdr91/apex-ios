@@ -1,7 +1,7 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-02
- * Description: Baseline home screen styled with a sleek Apple-inspired black gradient background.
+ * Description: Home screen with Apple-inspired black gradient and frosted glass widget canvas.
  */
 
 import React from 'react';
@@ -10,11 +10,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Spacing, BottomTabInset } from '@/constants/theme';
+import { GlassWidget } from '@/components/hig/GlassWidget';
 
 export default function HomeScreen() {
   return (
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
+
+      {/* Background Black Gradient */}
       <LinearGradient
         colors={['#1c1c1e', '#0f0f11', '#000000']}
         locations={[0, 0.45, 1]}
@@ -22,6 +25,10 @@ export default function HomeScreen() {
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
+
+      {/* Subtle Ambient Backlight to Enhance Frosted Glass Refraction */}
+      <View style={styles.ambientBacklightOrb} />
+
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View
           style={[
@@ -36,7 +43,8 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.content}>
-            {/* Clean canvas area ready for feature implementation */}
+            {/* Empty Frosted Glass Widget */}
+            <GlassWidget height={190} />
           </View>
         </View>
       </SafeAreaView>
@@ -48,6 +56,15 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  ambientBacklightOrb: {
+    position: 'absolute',
+    top: 140,
+    alignSelf: 'center',
+    width: 260,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(10, 132, 255, 0.08)',
   },
   safeArea: {
     flex: 1,
@@ -68,7 +85,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    paddingTop: Spacing.two,
   },
 });
