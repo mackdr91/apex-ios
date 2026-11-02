@@ -26,9 +26,6 @@ export default function HomeScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Subtle Ambient Backlight to Enhance Frosted Glass Refraction */}
-      <View style={styles.ambientBacklightOrb} />
-
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View
           style={[
@@ -56,15 +53,6 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: '#000000',
-  },
-  ambientBacklightOrb: {
-    position: 'absolute',
-    top: 140,
-    alignSelf: 'center',
-    width: 260,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(10, 132, 255, 0.08)',
   },
   safeArea: {
     flex: 1,
