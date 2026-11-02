@@ -1,0 +1,59 @@
+# Author: Domonick Mack
+# Date: 2026-11-02
+# Description: Docker Compose specification for Apex iOS local development environment
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: apex_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apex_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apex_password}
+      POSTGRES_DB: ${POSTGRES_DB:-apex_db}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apex_user} -d ${POSTGRES_DB:-apex_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - apex_network
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: apex_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 8000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-apex_user}:${POSTGRES_PASSWORD:-apex_password}@postgres:5432/${POSTGRES_DB:-apex_db}?schema=public
+    ports:
+      - "${API_HOST_PORT:-8003}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - apex_network
+
+volumes:
+  postgres_data:
+    name: apex_postgres_data
+
+networks:
+  apex_network:
+    name: apex_network
+    driver: bridge
