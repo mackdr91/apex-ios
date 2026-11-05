@@ -1,7 +1,7 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-05
- * Description: Primary screen orchestrating the ~2.5s Home loading splash, Frosted Dark Glass Login/Sign-Up screen, My Sneaker Vault dashboard, QR Hub, and Floating Glass Nebula Pill navbar.
+ * Description: Primary screen orchestrating the ~2.5s loading splash, Frosted Dark Glass Login/Sign-Up screen, Home (My Sneaker Vault dashboard), Vault catalog, QR Hub, and Floating Glass Nebula Pill navbar.
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -35,11 +35,13 @@ import {
 import { inventoryApi } from '@/services/inventoryApi';
 import { clearAuthToken, type AuthUser } from '@/services/authApi';
 import { formatCurrency } from '@/utils/format';
-import type {
-  Sneaker,
-  SneakerInput,
-  InventoryMetrics,
-  SneakerStatus,
+import {
+  SNEAKER_STATUSES,
+  STATUS_LABELS,
+  type Sneaker,
+  type SneakerInput,
+  type InventoryMetrics,
+  type SneakerStatus,
 } from '@/types/sneaker';
 
 type AuthStage = 'splash' | 'auth' | 'authenticated';
@@ -57,7 +59,7 @@ const EMPTY_METRICS: InventoryMetrics = {
 export default function HomeScreen() {
   const [authStage, setAuthStage] = useState<AuthStage>('splash');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<NebulaTabId>('vault');
+  const [activeTab, setActiveTab] = useState<NebulaTabId>('home');
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [sneakers, setSneakers] = useState<Sneaker[]>([]);
@@ -95,7 +97,7 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // Run the ~2.5s Home Editorial loading splash, then fade in the Login / Sign Up form
+  // Run the ~2.5s Editorial loading splash, then fade in the Login / Sign Up form
   useEffect(() => {
     if (authStage !== 'splash') return;
 
@@ -124,7 +126,7 @@ export default function HomeScreen() {
       useNativeDriver: true,
     }).start(() => {
       setCurrentUser(user);
-      setActiveTab('vault');
+      setActiveTab('home');
       setAuthStage('authenticated');
       void loadInventory(false);
       Animated.timing(fadeAnim, {
@@ -208,14 +210,14 @@ export default function HomeScreen() {
   const unrealizedGain = metrics.totalValuation - metrics.totalCost;
   const gainPositive = unrealizedGain >= 0;
 
-  const showSlideshowBackground =
-    authStage === 'splash' || authStage === 'auth' || activeTab === 'home';
+  // Slideshow is shown only on the initial loading splash and Login/Sign-Up screen;
+  // Once authenticated, Home IS the Sneaker Vault with the Black-Blue-Purple Nebula gradient.
+  const showSlideshowBackground = authStage === 'splash' || authStage === 'auth';
 
   return (
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
 
-      {/* Background: Sneaker Slideshow on Splash/Auth/Home Cover; Black-Blue-Purple Nebula on Vault & QR Hub */}
       {showSlideshowBackground ? (
         <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
       ) : (
@@ -230,11 +232,6 @@ export default function HomeScreen() {
           />
         ) : authStage === 'auth' ? (
           <AuthGlassOverlay onAuthenticated={handleAuthenticated} />
-        ) : activeTab === 'home' ? (
-          <EditorialHeroOverlay
-            isLoadingSplash={false}
-            onEnterVault={() => switchTab('vault')}
-          />
         ) : activeTab === 'qrhub' ? (
           <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <QRHubView
@@ -246,10 +243,141 @@ export default function HomeScreen() {
                 setEditingSneaker(null);
                 setAddModalVisible(true);
               }}
-              onBackToHome={() => switchTab('vault')}
+              onBackToHome={() => switchTab('home')}
             />
           </SafeAreaView>
+        ) : activeTab === 'vault' ? (
+          /* Dedicated Vault Collection Catalog Tab */
+          <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <View style={styles.headerBar}>
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => switchTab('home')}
+                style={styles.backButton}
+                accessibilityLabel="Back to Home"
+              >
+                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              <View style={styles.headerTitleCol}>
+                <Text style={styles.dashboardTitle}>Vault Collection</Text>
+                <Text style={styles.collectorSub}>
+                  {sneakers.length} {sneakers.length === 1 ? 'Pair' : 'Pairs'} Cataloged
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => {
+                  setEditingSneaker(null);
+                  setAddModalVisible(true);
+                }}
+                style={styles.addHeaderButton}
+                accessibilityLabel="Add sneaker"
+              >
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: BottomTabInset + 100 },
+              ]}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => void loadInventory(true)}
+                  tintColor="#FFFFFF"
+                />
+              }
+            >
+              {/* Search Bar */}
+              <View style={[styles.searchBar, { marginTop: 4 }]}>
+                <Ionicons name="search" size={16} color="rgba(255,255,255,0.55)" />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search brand, model, colorway, SKU, or size..."
+                  placeholderTextColor="rgba(255,255,255,0.45)"
+                  style={styles.searchInput}
+                />
+                {searchQuery ? (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons
+                      name="close-circle"
+                      size={18}
+                      color="rgba(255,255,255,0.55)"
+                    />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {/* Status Filter Chips */}
+              <View style={styles.filterChipRow}>
+                <TouchableOpacity
+                  onPress={() => setStatusFilter('all')}
+                  style={[
+                    styles.filterChip,
+                    statusFilter === 'all' && styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      statusFilter === 'all' && styles.filterChipTextActive,
+                    ]}
+                  >
+                    All ({sneakers.length})
+                  </Text>
+                </TouchableOpacity>
+                {SNEAKER_STATUSES.map((st) => {
+                  const active = statusFilter === st;
+                  return (
+                    <TouchableOpacity
+                      key={st}
+                      onPress={() => setStatusFilter(st)}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          active && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {STATUS_LABELS[st]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {filteredSneakers.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Ionicons
+                    name="cube-outline"
+                    size={32}
+                    color="rgba(255,255,255,0.5)"
+                  />
+                  <Text style={styles.emptyTitle}>No matching pairs</Text>
+                  <Text style={styles.emptyText}>
+                    Tap the + button in the top right to photograph a sneaker and generate its QR box tag.
+                  </Text>
+                </View>
+              ) : (
+                filteredSneakers.map((item) => (
+                  <SneakerCard
+                    key={item.id}
+                    sneaker={item}
+                    onPress={(sneaker) => setSelectedSneaker(sneaker)}
+                  />
+                ))
+              )}
+            </ScrollView>
+          </SafeAreaView>
         ) : (
+          /* HOME TAB = My Sneaker Vault Dashboard */
           <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <View style={styles.headerBar}>
               <TouchableOpacity
@@ -478,8 +606,8 @@ export default function HomeScreen() {
         )}
       </Animated.View>
 
-      {/* Custom Floating Glass Nebula Pill Navbar (Visible only when Authenticated & inside Vault/QR Hub) */}
-      {authStage === 'authenticated' && activeTab !== 'home' ? (
+      {/* Custom Floating Glass Nebula Pill Navbar (Visible on all authenticated screens: Home, Vault, QR Hub) */}
+      {authStage === 'authenticated' ? (
         <NebulaNavBar activeTab={activeTab} onSelectTab={switchTab} />
       ) : null}
 
@@ -722,6 +850,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     paddingVertical: 0,
+  },
+  filterChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 14,
+  },
+  filterChip: {
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(18, 18, 24, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+  },
+  filterChipActive: {
+    backgroundColor: '#7C3AED',
+    borderColor: '#C4B5FD',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.68)',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
   listHeaderRow: {
     flexDirection: 'row',
