@@ -1,101 +1,47 @@
 <!--
 Author: Domonick Mack
-Date: 2026-11-02
-Description: Project overview, architecture, setup guide, and documentation for Apex iOS.
+Date: 2026-11-05
+Description: Project overview, architecture, API reference, and quickstart guide for Apex Vault Sneaker Inventory iOS app.
 -->
 
-# Apex iOS - Mobile App & Containerized Development Environment
+# Apex Vault — Sneaker Collection Inventory App (iOS)
 
-Apex iOS is a modern iOS mobile application crafted with React Native and Expo, styled strictly according to Apple's Human Interface Guidelines (HIG), and backed by a containerized Fastify (Node.js/TypeScript) REST API and PostgreSQL database orchestrated with Docker Compose.
+Apex Vault is a full-stack iOS Sneaker Collection Inventory Application built with React Native (Expo SDK) and a containerized Fastify + PostgreSQL 16 backend orchestrated via Docker Compose.
 
----
+## Key Features
 
-## Architecture Overview
-
-```
-                                +---------------------------+
-                                |      Apex iOS Client      |
-                                | (React Native + Expo SDK) |
-                                |  NativeWind HIG Styling   |
-                                +-------------+-------------+
-                                              |
-                                     HTTP API | Requests
-                                              v
-+-----------------------------------------------------------------------------------+
-| Docker Compose Development Environment                                            |
-|                                                                                   |
-|  +-------------------------------------+   +------------------------------------+  |
-|  |             backend-api             |   |              postgres              |  |
-|  |       Fastify + TypeScript API      |-->|       PostgreSQL 16 Database       |  |
-|  |         (Port 8003:8000)            |   |          (Port 5433:5432)          |  |
-|  +-------------------------------------+   +------------------------------------+  |
-+-----------------------------------------------------------------------------------+
-```
+- **Cross-Fade Sneaker Photography Slideshow**: Full-bleed background cycling smoothly through custom sneaker photography (`SneakerSlideshow`) with an Editorial Hero cover (`EditorialHeroOverlay`).
+- **Camera & Photo Library Capture**: Snap live sneaker photos or import shots from the iOS Photo Library via `expo-image-picker`, compressed and persisted as base64 data URIs in PostgreSQL.
+- **Automatic Printable QR Shoe-Box Tags**: Every pair in the collection automatically generates a vector QR code (`react-native-qrcode-svg`) encoding `apexvault://sneaker/<id>?sku=<sku>&size=<size>` inside a high-contrast printable label (`SneakerQRTag`) displaying Brand, Model, Colorway, SKU, US Size, and Storage Location.
+- **Full Sneaker Collector Metadata**: Track Brand, Model, Colorway, SKU / Style Code, US Size, Condition (`DS`, `VNDS`, `Used`, `Beater`), Vault Status (`in_stock`, `reserved`, `sold`), Purchase Price, Market Value, Unrealized Gain/Loss, Purchase Date, Box Condition (`OG All`, `OG Box (Damaged)`, `Replacement Box`, `No Box`), Storage Location, and Collector Notes.
+- **Portfolio Valuation Dashboard**: Dark portfolio summary card with unrealized gain/loss, interactive Mint (`In Stock`) and Lavender (`Reserved`) breakdown cards, real-time search & filtering, and full CRUD management.
 
 ---
 
-## Directory Structure
+## REST API Endpoints (`/api/v1/sneakers`)
 
-```
-.
-├── .gitignore               # Ignored files, credentials, dependencies, and build artifacts
-├── .env.example             # Template for local environment variables
-├── README.md                # Project documentation and quickstart instructions
-├── docker-compose.yml       # Docker Compose definition for backend and database services
-├── backend/                 # Containerized Fastify API service
-│   ├── Dockerfile           # Multi-stage production Dockerfile
-│   ├── package.json         # Node.js dependencies and scripts
-│   ├── tsconfig.json        # TypeScript configuration
-│   └── src/                 # Fastify application source code
-└── mobile/                  # React Native / Expo iOS client
-    ├── app/                 # Expo Router file-based screens
-    ├── components/          # Apple HIG design system components
-    ├── constants/           # HIG system colors, typography, and API config
-    ├── tailwind.config.js   # NativeWind HIG style configuration
-    └── package.json         # Expo dependencies and scripts
-```
-
----
-
-## Tech Stack
-
-- **Mobile Client**: React Native, Expo SDK, Expo Router, TypeScript
-- **Design System**: Apple Human Interface Guidelines (HIG) with NativeWind (Tailwind CSS) & SF-compatible iconography
-- **Backend Service**: Fastify, TypeScript, Node.js 20
-- **Database**: PostgreSQL 16 (Alpine)
-- **Containerization**: Docker & Docker Compose v2
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/sneakers` | Returns `{ sneakers, metrics }` ordered by newest first, with portfolio valuation & status breakdown metrics. |
+| `GET` | `/api/v1/sneakers/:id` | Returns a single sneaker entry by UUID. |
+| `POST` | `/api/v1/sneakers` | Creates a sneaker record and auto-generates its `qrCodeData` URI. |
+| `PUT` | `/api/v1/sneakers/:id` | Updates a sneaker record and refreshes its `qrCodeData` URI. |
+| `DELETE` | `/api/v1/sneakers/:id` | Removes a sneaker record from the vault (`204 No Content`). |
 
 ---
 
 ## Quickstart Guide
 
-### 1. Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running locally)
-- [Node.js](https://nodejs.org/) (v20+ recommended)
-- [Expo Go](https://expo.dev/go) on your iOS physical device or iOS Simulator via Xcode
-
-### 2. Start the Containerized Backend Environment
+### 1. Start the Containerized Backend & PostgreSQL Database
 ```bash
-# Copy the environment configuration
 cp .env.example .env
-
-# Build and start services in detached mode
 docker compose up -d --build
-
-# Verify container health
-docker compose ps
-curl http://localhost:8003/health
+curl http://localhost:8003/api/v1/sneakers
 ```
 
-### 3. Start the Mobile Client
+### 2. Run the iOS App
 ```bash
 cd mobile
 npm install
 npx expo start --ios
 ```
-
----
-
-## Development Standards
-- **File Headers**: Every file contains standard author attribution (`Author: Domonick Mack`), creation date, and brief functional description.
-- **Error Handling**: Production-ready code with graceful shutdowns, health check endpoints, and structured logging.
