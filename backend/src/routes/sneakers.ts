@@ -1,11 +1,13 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-05
- * Description: REST CRUD routes for the sneaker inventory, including collection metrics and QR payloads.
+ * Description: REST CRUD routes for the sneaker inventory scoped by authenticated user, including collection metrics and QR payloads.
  */
 
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { pool } from '../db/index.js';
+import { extractBearerPayload } from '../utils/authCrypto.js';
+import { DEFAULT_COLLECTOR_EMAIL } from '../db/migrate.js';
 
 const CONDITIONS = ['DS', 'VNDS', 'Used', 'Beater'];
 const STATUSES = ['in_stock', 'reserved', 'sold'];
@@ -13,6 +15,7 @@ const BOX_CONDITIONS = ['OG All', 'OG Box (Damaged)', 'Replacement Box', 'No Box
 
 interface SneakerRow {
   id: string;
+  user_id: string | null;
   brand: string;
   model: string;
   colorway: string;
@@ -76,6 +79,20 @@ const idParamsSchema = {
   properties: { id: { type: 'string', format: 'uuid' } },
 } as const;
 
+/** Resolves the active user ID from the Bearer token, or falls back to the seeded collector account. */
+async function resolveUserId(request: FastifyRequest): Promise<string> {
+  const tokenPayload = extractBearerPayload(request.headers.authorization);
+  if (tokenPayload?.userId) {
+    return tokenPayload.userId;
+  }
+
+  const { rows } = await pool.query<{ id: string }>(
+    'SELECT id FROM users WHERE email = $1 LIMIT 1',
+    [DEFAULT_COLLECTOR_EMAIL]
+  );
+  return rows[0]?.id ?? '';
+}
+
 /** Builds the payload encoded into each pair's box-tag QR code. */
 function buildQrPayload(row: SneakerRow): string {
   return `apexvault://sneaker/${row.id}?sku=${encodeURIComponent(row.sku)}&size=${encodeURIComponent(row.size)}`;
@@ -126,9 +143,13 @@ function toParams(b: SneakerBody): unknown[] {
 }
 
 export async function sneakerRoutes(fastify: FastifyInstance) {
-  // List all pairs with aggregate collection metrics
-  fastify.get('/api/v1/sneakers', async () => {
-    const { rows } = await pool.query<SneakerRow>('SELECT * FROM sneakers ORDER BY created_at DESC');
+  // List all pairs for the current user with aggregate collection metrics
+  fastify.get('/api/v1/sneakers', async (request) => {
+    const userId = await resolveUserId(request);
+    const { rows } = await pool.query<SneakerRow>(
+      'SELECT * FROM sneakers WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     const sneakers = rows.map(toApi);
 
     const sum = (list: typeof sneakers) => list.reduce((acc, s) => acc + s.marketValue, 0);
@@ -154,53 +175,63 @@ export async function sneakerRoutes(fastify: FastifyInstance) {
     '/api/v1/sneakers/:id',
     { schema: { params: idParamsSchema } },
     async (request, reply) => {
-      const { rows } = await pool.query<SneakerRow>('SELECT * FROM sneakers WHERE id = $1', [request.params.id]);
+      const userId = await resolveUserId(request);
+      const { rows } = await pool.query<SneakerRow>(
+        'SELECT * FROM sneakers WHERE id = $1 AND user_id = $2',
+        [request.params.id, userId]
+      );
       if (rows.length === 0) return reply.notFound('Sneaker not found');
       return toApi(rows[0]);
-    },
+    }
   );
 
   fastify.post<{ Body: SneakerBody }>(
     '/api/v1/sneakers',
     { schema: { body: sneakerBodySchema } },
     async (request, reply) => {
+      const userId = await resolveUserId(request);
       const { rows } = await pool.query<SneakerRow>(
         `INSERT INTO sneakers
           (brand, model, colorway, sku, size, condition, status, purchase_price, market_value,
-           purchase_date, box_condition, storage_location, notes, image_data)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+           purchase_date, box_condition, storage_location, notes, image_data, user_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          RETURNING *`,
-        toParams(request.body),
+        [...toParams(request.body), userId]
       );
       return reply.status(201).send(toApi(rows[0]));
-    },
+    }
   );
 
   fastify.put<{ Params: { id: string }; Body: SneakerBody }>(
     '/api/v1/sneakers/:id',
     { schema: { params: idParamsSchema, body: sneakerBodySchema } },
     async (request, reply) => {
+      const userId = await resolveUserId(request);
       const { rows } = await pool.query<SneakerRow>(
         `UPDATE sneakers SET
           brand=$1, model=$2, colorway=$3, sku=$4, size=$5, condition=$6, status=$7,
           purchase_price=$8, market_value=$9, purchase_date=$10, box_condition=$11,
           storage_location=$12, notes=$13, image_data=$14, updated_at=NOW()
-         WHERE id=$15
+         WHERE id=$15 AND user_id=$16
          RETURNING *`,
-        [...toParams(request.body), request.params.id],
+        [...toParams(request.body), request.params.id, userId]
       );
       if (rows.length === 0) return reply.notFound('Sneaker not found');
       return toApi(rows[0]);
-    },
+    }
   );
 
   fastify.delete<{ Params: { id: string } }>(
     '/api/v1/sneakers/:id',
     { schema: { params: idParamsSchema } },
     async (request, reply) => {
-      const { rowCount } = await pool.query('DELETE FROM sneakers WHERE id = $1', [request.params.id]);
+      const userId = await resolveUserId(request);
+      const { rowCount } = await pool.query(
+        'DELETE FROM sneakers WHERE id = $1 AND user_id = $2',
+        [request.params.id, userId]
+      );
       if (!rowCount) return reply.notFound('Sneaker not found');
       return reply.status(204).send();
-    },
+    }
   );
 }

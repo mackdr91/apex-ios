@@ -9,6 +9,7 @@ import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
 import dotenv from 'dotenv';
 import { healthRoutes } from './routes/health.js';
+import { authRoutes } from './routes/auth.js';
 import { sneakerRoutes } from './routes/sneakers.js';
 import { pool } from './db/index.js';
 import { runMigrations } from './db/migrate.js';
@@ -38,6 +39,7 @@ async function bootstrap() {
 
     // Register routes
     await server.register(healthRoutes);
+    await server.register(authRoutes);
     await server.register(sneakerRoutes);
 
     const port = Number(process.env.PORT) || 8000;
