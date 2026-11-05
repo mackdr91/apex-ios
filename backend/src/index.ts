@@ -9,11 +9,15 @@ import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
 import dotenv from 'dotenv';
 import { healthRoutes } from './routes/health.js';
+import { sneakerRoutes } from './routes/sneakers.js';
 import { pool } from './db/index.js';
+import { runMigrations } from './db/migrate.js';
 
 dotenv.config();
 
 const server = Fastify({
+  // Allow compressed base64 sneaker photos in request bodies (15 MB)
+  bodyLimit: 15 * 1024 * 1024,
   logger: {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   },
@@ -28,8 +32,13 @@ async function bootstrap() {
       credentials: true,
     });
 
+    // Ensure database schema exists before serving traffic
+    await runMigrations();
+    server.log.info('Database migrations applied.');
+
     // Register routes
     await server.register(healthRoutes);
+    await server.register(sneakerRoutes);
 
     const port = Number(process.env.PORT) || 8000;
     const host = process.env.HOST || '0.0.0.0';
