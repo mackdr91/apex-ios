@@ -1,7 +1,7 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-05
- * Description: Primary screen orchestrating the Editorial Hero cover, My Sneaker Vault dashboard, QR Hub, and the custom Floating Glass Nebula Pill navbar.
+ * Description: Primary screen orchestrating the ~2.5s Home loading splash, Frosted Dark Glass Login/Sign-Up screen, My Sneaker Vault dashboard, QR Hub, and Floating Glass Nebula Pill navbar.
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -23,6 +23,7 @@ import { Spacing, BottomTabInset, BorderRadius } from '@/constants/theme';
 import { SneakerSlideshow } from '@/components/home/SneakerSlideshow';
 import { NebulaBackground } from '@/components/home/NebulaBackground';
 import { EditorialHeroOverlay } from '@/components/home/EditorialHeroOverlay';
+import { AuthGlassOverlay } from '@/components/auth/AuthGlassOverlay';
 import { SneakerCard } from '@/components/inventory/SneakerCard';
 import { AddSneakerModal } from '@/components/inventory/AddSneakerModal';
 import { SneakerDetailModal } from '@/components/inventory/SneakerDetailModal';
@@ -32,6 +33,7 @@ import {
   type NebulaTabId,
 } from '@/components/navigation/NebulaNavBar';
 import { inventoryApi } from '@/services/inventoryApi';
+import { clearAuthToken, type AuthUser } from '@/services/authApi';
 import { formatCurrency } from '@/utils/format';
 import type {
   Sneaker,
@@ -39,6 +41,8 @@ import type {
   InventoryMetrics,
   SneakerStatus,
 } from '@/types/sneaker';
+
+type AuthStage = 'splash' | 'auth' | 'authenticated';
 
 const EMPTY_METRICS: InventoryMetrics = {
   totalPairs: 0,
@@ -51,7 +55,9 @@ const EMPTY_METRICS: InventoryMetrics = {
 };
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState<NebulaTabId>('home');
+  const [authStage, setAuthStage] = useState<AuthStage>('splash');
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [activeTab, setActiveTab] = useState<NebulaTabId>('vault');
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [sneakers, setSneakers] = useState<Sneaker[]>([]);
@@ -89,9 +95,64 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Run the ~2.5s Home Editorial loading splash, then fade in the Login / Sign Up form
   useEffect(() => {
-    void loadInventory(false);
-  }, [loadInventory]);
+    if (authStage !== 'splash') return;
+
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true,
+      }).start(() => {
+        setAuthStage('auth');
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 380,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [authStage, fadeAnim]);
+
+  const handleAuthenticated = (user: AuthUser) => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentUser(user);
+      setActiveTab('vault');
+      setAuthStage('authenticated');
+      void loadInventory(false);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const handleSignOut = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start(() => {
+      clearAuthToken();
+      setCurrentUser(null);
+      setSneakers([]);
+      setMetrics(EMPTY_METRICS);
+      setAuthStage('auth');
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
 
   const switchTab = (nextTab: NebulaTabId) => {
     if (nextTab === activeTab) return;
@@ -147,20 +208,33 @@ export default function HomeScreen() {
   const unrealizedGain = metrics.totalValuation - metrics.totalCost;
   const gainPositive = unrealizedGain >= 0;
 
+  const showSlideshowBackground =
+    authStage === 'splash' || authStage === 'auth' || activeTab === 'home';
+
   return (
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
 
-      {/* Background switches between Sneaker Slideshow on Home and Black/Blue/Purple Nebula on Vault & QR Hub */}
-      {activeTab === 'home' ? (
+      {/* Background: Sneaker Slideshow on Splash/Auth/Home Cover; Black-Blue-Purple Nebula on Vault & QR Hub */}
+      {showSlideshowBackground ? (
         <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
       ) : (
         <NebulaBackground />
       )}
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
-        {activeTab === 'home' ? (
-          <EditorialHeroOverlay onEnterVault={() => switchTab('vault')} />
+        {authStage === 'splash' ? (
+          <EditorialHeroOverlay
+            isLoadingSplash
+            onEnterVault={() => setAuthStage('auth')}
+          />
+        ) : authStage === 'auth' ? (
+          <AuthGlassOverlay onAuthenticated={handleAuthenticated} />
+        ) : activeTab === 'home' ? (
+          <EditorialHeroOverlay
+            isLoadingSplash={false}
+            onEnterVault={() => switchTab('vault')}
+          />
         ) : activeTab === 'qrhub' ? (
           <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <QRHubView
@@ -172,7 +246,7 @@ export default function HomeScreen() {
                 setEditingSneaker(null);
                 setAddModalVisible(true);
               }}
-              onBackToHome={() => switchTab('home')}
+              onBackToHome={() => switchTab('vault')}
             />
           </SafeAreaView>
         ) : (
@@ -180,13 +254,21 @@ export default function HomeScreen() {
             <View style={styles.headerBar}>
               <TouchableOpacity
                 activeOpacity={0.75}
-                onPress={() => switchTab('home')}
+                onPress={handleSignOut}
                 style={styles.backButton}
+                accessibilityLabel="Sign Out"
               >
-                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
               </TouchableOpacity>
 
-              <Text style={styles.dashboardTitle}>My Sneaker Vault</Text>
+              <View style={styles.headerTitleCol}>
+                <Text style={styles.dashboardTitle}>My Sneaker Vault</Text>
+                {currentUser ? (
+                  <Text style={styles.collectorSub} numberOfLines={1}>
+                    {currentUser.displayName}
+                  </Text>
+                ) : null}
+              </View>
 
               <TouchableOpacity
                 activeOpacity={0.75}
@@ -396,8 +478,8 @@ export default function HomeScreen() {
         )}
       </Animated.View>
 
-      {/* Custom Floating Glass Nebula Pill Navbar (Hidden on Home Editorial Cover) */}
-      {activeTab !== 'home' ? (
+      {/* Custom Floating Glass Nebula Pill Navbar (Visible only when Authenticated & inside Vault/QR Hub) */}
+      {authStage === 'authenticated' && activeTab !== 'home' ? (
         <NebulaNavBar activeTab={activeTab} onSelectTab={switchTab} />
       ) : null}
 
@@ -453,11 +535,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitleCol: {
+    alignItems: 'center',
+  },
   dashboardTitle: {
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: -0.4,
     color: '#FFFFFF',
+  },
+  collectorSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(196, 181, 253, 0.85)',
+    marginTop: 1,
   },
   addHeaderButton: {
     width: 40,

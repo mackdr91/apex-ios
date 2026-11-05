@@ -1,20 +1,42 @@
 /**
  * Author: Domonick Mack
- * Date: 2026-11-04
- * Description: Editorial fashion hero layout matching reference design with vertical typography and CTA pill.
+ * Date: 2026-11-05
+ * Description: Editorial fashion hero layout serving as the animated ~2.5s loading splash screen and cover view over the sneaker slideshow.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing, BorderRadius } from '@/constants/theme';
 
 export interface EditorialHeroOverlayProps {
   onEnterVault: () => void;
+  isLoadingSplash?: boolean;
 }
 
-export function EditorialHeroOverlay({ onEnterVault }: EditorialHeroOverlayProps) {
+export function EditorialHeroOverlay({
+  onEnterVault,
+  isLoadingSplash = false,
+}: EditorialHeroOverlayProps) {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isLoadingSplash) {
+      progressAnim.setValue(0);
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 2400,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [isLoadingSplash, progressAnim]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['8%', '100%'],
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Top Utility Bar */}
@@ -24,13 +46,15 @@ export function EditorialHeroOverlay({ onEnterVault }: EditorialHeroOverlayProps
           <Text style={styles.liveText}>EXCLUSIVE DROP</Text>
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onEnterVault}
-          style={styles.skipButton}
-        >
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
+        {!isLoadingSplash ? (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onEnterVault}
+            style={styles.skipButton}
+          >
+            <Text style={styles.skipText}>Vault</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Vertical Brand Typography Along Left Edge */}
@@ -49,15 +73,28 @@ export function EditorialHeroOverlay({ onEnterVault }: EditorialHeroOverlayProps
           <Text style={styles.headlineWord}>COLLECTION</Text>
         </View>
 
-        {/* Action Button Pill Matching Reference */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={onEnterVault}
-          style={styles.ctaPill}
-        >
-          <Text style={styles.ctaText}>LET&apos;S START</Text>
-          <Ionicons name="arrow-forward" size={15} color="#FFFFFF" style={styles.ctaIcon} />
-        </TouchableOpacity>
+        {isLoadingSplash ? (
+          <View style={styles.loadingWrap}>
+            <View style={styles.loadingTrack}>
+              <Animated.View style={[styles.loadingFill, { width: progressWidth }]} />
+            </View>
+            <Text style={styles.loadingCaption}>INITIALIZING SNEAKER VAULT...</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onEnterVault}
+            style={styles.ctaPill}
+          >
+            <Text style={styles.ctaText}>RETURN TO VAULT</Text>
+            <Ionicons
+              name="arrow-forward"
+              size={15}
+              color="#FFFFFF"
+              style={styles.ctaIcon}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -153,6 +190,29 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     lineHeight: 28,
+  },
+  loadingWrap: {
+    width: 210,
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  loadingTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    overflow: 'hidden',
+  },
+  loadingFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  loadingCaption: {
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.4,
   },
   ctaPill: {
     flexDirection: 'row',

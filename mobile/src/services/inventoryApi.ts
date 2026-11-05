@@ -5,6 +5,7 @@
  */
 
 import { getBackendBaseUrl } from '@/services/api';
+import { getAuthToken } from '@/services/authApi';
 import type { InventoryResponse, Sneaker, SneakerInput } from '@/types/sneaker';
 
 const REQUEST_TIMEOUT_MS = 15000;
@@ -23,11 +24,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
+    const token = getAuthToken();
     const response = await fetch(`${getBackendBaseUrl()}${path}`, {
       ...init,
       headers: {
         Accept: 'application/json',
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },
       signal: controller.signal,
