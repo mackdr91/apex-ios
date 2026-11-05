@@ -23,6 +23,8 @@ import { inventoryApi } from '@/services/inventoryApi';
 import { formatCurrency } from '@/utils/format';
 import { STATUS_LABELS, type Sneaker } from '@/types/sneaker';
 
+const FALLBACK_SNEAKER_IMG = require('../../../assets/images/sneakers/sneaker_1.jpg');
+
 export interface SneakerDetailModalProps {
   sneaker: Sneaker | null;
   onClose: () => void;
@@ -86,14 +88,12 @@ export function SneakerDetailModal({ sneaker, onClose, onEdit, onDeleted }: Snea
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Hero photo */}
           <View style={styles.photoWrap}>
-            {sneaker.imageData ? (
-              <Image source={{ uri: sneaker.imageData }} style={styles.photo} contentFit="cover" transition={200} />
-            ) : (
-              <View style={[styles.photo, styles.photoPlaceholder]}>
-                <Ionicons name="image-outline" size={40} color="rgba(255,255,255,0.35)" />
-                <Text style={styles.placeholderText}>No photo yet</Text>
-              </View>
-            )}
+            <Image
+              source={sneaker.imageData ? { uri: sneaker.imageData } : FALLBACK_SNEAKER_IMG}
+              style={styles.photo}
+              contentFit="cover"
+              transition={200}
+            />
             <View style={styles.statusPill}>
               <Text style={styles.statusText}>{STATUS_LABELS[sneaker.status]}</Text>
             </View>
