@@ -29,6 +29,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Apex uses your photo library to attach pictures of your sneakers.",
+          "cameraPermission": "Apex uses the camera to photograph your sneakers for your inventory."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#007AFF",
