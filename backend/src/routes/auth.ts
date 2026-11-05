@@ -6,6 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { pool } from '../db/index.js';
+import { seedStarterSneakersForUser } from '../db/migrate.js';
 import {
   hashPassword,
   verifyPassword,
@@ -90,27 +91,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       );
       const user = rows[0];
 
-      // Seed the starter Nike Ja 1 'Tiger Iridescent' pair for the new collector
-      await pool.query(
-        `INSERT INTO sneakers
-          (user_id, brand, model, colorway, sku, size, condition, status, purchase_price, market_value, box_condition, storage_location, notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [
-          user.id,
-          'Nike',
-          'Ja 1',
-          'Tiger Iridescent',
-          'FV1288-800',
-          '10.5',
-          'DS',
-          'in_stock',
-          120,
-          210,
-          'OG All',
-          'Shelf A - Box 01',
-          'Pony-hair tiger upper, holographic mudguard.',
-        ]
-      );
+      // Seed the 6-pair starter collection for the new collector
+      await seedStarterSneakersForUser(user.id);
 
       const token = signAuthToken({ userId: user.id, email: user.email });
       return reply.status(201).send({

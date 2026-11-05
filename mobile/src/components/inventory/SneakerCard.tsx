@@ -10,7 +10,16 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Sneaker } from '@/types/sneaker';
 import { formatCurrency } from '@/utils/format';
 
-const FALLBACK_SNEAKER_IMG = require('../../../assets/images/sneakers/sneaker_1.jpg');
+const FALLBACK_SNEAKER_IMGS = [
+  require('../../../assets/images/sneakers/sneaker_1.jpg'),
+  require('../../../assets/images/sneakers/sneaker_2.jpg'),
+  require('../../../assets/images/sneakers/sneaker_3.jpg'),
+];
+
+function getFallbackSneakerImg(id: string) {
+  const code = id.charCodeAt(0) + id.charCodeAt(id.length - 1);
+  return FALLBACK_SNEAKER_IMGS[code % FALLBACK_SNEAKER_IMGS.length];
+}
 
 export interface SneakerCardProps {
   sneaker: Sneaker;
@@ -25,7 +34,9 @@ const STATUS_DOT: Record<Sneaker['status'], { color: string; label: string }> = 
 
 export function SneakerCard({ sneaker, onPress }: SneakerCardProps) {
   const statusMeta = STATUS_DOT[sneaker.status];
-  const imageSource = sneaker.imageData ? { uri: sneaker.imageData } : FALLBACK_SNEAKER_IMG;
+  const imageSource = sneaker.imageData
+    ? { uri: sneaker.imageData }
+    : getFallbackSneakerImg(sneaker.id);
 
   return (
     <TouchableOpacity

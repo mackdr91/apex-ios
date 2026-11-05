@@ -11,6 +11,21 @@ export const DEFAULT_COLLECTOR_EMAIL = 'domonick@apexvault.io';
 export const DEFAULT_COLLECTOR_PASSWORD = 'vault1234';
 export const DEFAULT_COLLECTOR_NAME = 'Domonick Mack';
 
+export async function seedStarterSneakersForUser(userId: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO sneakers
+      (user_id, brand, model, colorway, sku, size, condition, status, purchase_price, market_value, purchase_date, box_condition, storage_location, notes)
+     VALUES
+      ($1, 'Nike', 'Ja 1', 'Tiger Iridescent', 'FV1288-800', '10.5', 'DS', 'in_stock', 120.00, 245.00, '2026-08-14', 'OG All', 'Vault Shelf A1', 'Pony-hair tiger stripe upper with holographic iridescent mudguard and dual black/pink lace setup.'),
+      ($1, 'Jordan', 'Air Jordan 1 Retro High OG', 'Travis Scott Mocha', 'CD4487-100', '10.5', 'DS', 'in_stock', 175.00, 1450.00, '2026-03-19', 'OG All', 'Vault Shelf A2', 'Reverse Swoosh in Sail leather, stash pocket on collar, pink extra laces included.'),
+      ($1, 'Jordan', 'Air Jordan 4 Retro SB', 'Pine Green', 'DR5415-103', '11', 'VNDS', 'in_stock', 225.00, 520.00, '2026-05-02', 'OG All', 'Vault Shelf A3', 'Nike SB heel tab, gum outsole, re-engineered forefoot flex.'),
+      ($1, 'Nike', 'Kobe 6 Protro', 'Reverse Grinch', 'FV4921-600', '10.5', 'DS', 'reserved', 190.00, 465.00, '2026-06-15', 'OG All', 'Vault Shelf B1', 'Bright Crimson snakeskin textured upper with Electric Green laces.'),
+      ($1, 'New Balance', '990v6 Made in USA', 'Action Bronson Baklava', 'M990AB6', '10.5', 'DS', 'in_stock', 220.00, 410.00, '2026-07-21', 'OG All', 'Vault Shelf B2', 'Multi-color mesh and pigskin suede overlays with FuelCell midsole.'),
+      ($1, 'Jordan', 'Air Jordan 11 Retro', 'Gratitude / Defining Moments', 'CT8012-170', '10.5', 'DS', 'reserved', 230.00, 315.00, '2026-09-10', 'OG All', 'Vault Shelf B3', 'Metallic gold Jumpman emblem with high-cut black patent leather mudguard.')`,
+    [userId]
+  );
+}
+
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

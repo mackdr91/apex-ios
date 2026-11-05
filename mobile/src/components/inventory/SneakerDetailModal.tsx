@@ -23,7 +23,16 @@ import { inventoryApi } from '@/services/inventoryApi';
 import { formatCurrency } from '@/utils/format';
 import { STATUS_LABELS, type Sneaker } from '@/types/sneaker';
 
-const FALLBACK_SNEAKER_IMG = require('../../../assets/images/sneakers/sneaker_1.jpg');
+const FALLBACK_SNEAKER_IMGS = [
+  require('../../../assets/images/sneakers/sneaker_1.jpg'),
+  require('../../../assets/images/sneakers/sneaker_2.jpg'),
+  require('../../../assets/images/sneakers/sneaker_3.jpg'),
+];
+
+function getFallbackSneakerImg(id: string) {
+  const code = id.charCodeAt(0) + id.charCodeAt(id.length - 1);
+  return FALLBACK_SNEAKER_IMGS[code % FALLBACK_SNEAKER_IMGS.length];
+}
 
 export interface SneakerDetailModalProps {
   sneaker: Sneaker | null;
@@ -89,7 +98,11 @@ export function SneakerDetailModal({ sneaker, onClose, onEdit, onDeleted }: Snea
           {/* Hero photo */}
           <View style={styles.photoWrap}>
             <Image
-              source={sneaker.imageData ? { uri: sneaker.imageData } : FALLBACK_SNEAKER_IMG}
+              source={
+                sneaker.imageData
+                  ? { uri: sneaker.imageData }
+                  : getFallbackSneakerImg(sneaker.id)
+              }
               style={styles.photo}
               contentFit="cover"
               transition={200}

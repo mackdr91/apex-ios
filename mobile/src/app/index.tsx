@@ -97,6 +97,11 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Pre-load inventory so it is ready immediately upon entering the Vault
+  useEffect(() => {
+    void loadInventory(false);
+  }, [loadInventory]);
+
   // Run the ~2.5s Editorial loading splash, then fade in the Login / Sign Up form
   useEffect(() => {
     if (authStage !== 'splash') return;
