@@ -1,15 +1,15 @@
 /**
  * Author: Domonick Mack
- * Date: 2026-11-02
- * Description: Home screen featuring top frosted glass widget and dual side-by-side clear widgets.
+ * Date: 2026-11-04
+ * Description: Baseline home screen powered by background sneaker cross-fade slideshow with glass and clear widgets.
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Spacing, BottomTabInset } from '@/constants/theme';
+import { SneakerSlideshow } from '@/components/home/SneakerSlideshow';
 import { GlassWidget } from '@/components/hig/GlassWidget';
 import { ClearWidget } from '@/components/hig/ClearWidget';
 
@@ -18,14 +18,8 @@ export default function HomeScreen() {
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
 
-      {/* Background Black Gradient */}
-      <LinearGradient
-        colors={['#1c1c1e', '#0f0f11', '#000000']}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Auto-Advancing Sneaker Photography Slideshow Background */}
+      <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View
@@ -37,6 +31,7 @@ export default function HomeScreen() {
           ]}
         >
           <View style={styles.header}>
+            <Text style={styles.eyebrow}>INVENTORY SHOWCASE</Text>
             <Text style={styles.title}>Home</Text>
           </View>
 
@@ -71,6 +66,13 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Spacing.three,
+  },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: Spacing.half,
   },
   title: {
     fontSize: 34,
