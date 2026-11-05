@@ -5,6 +5,7 @@
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 export interface DatabaseStatus {
   status: 'healthy' | 'unhealthy';
@@ -31,6 +32,7 @@ export interface BackendStatusResponse {
 
 /**
  * Resolves the appropriate backend host based on the runtime platform.
+ * - Physical iPhone / Android device over Wi-Fi: extracts Mac LAN IP from Expo hostUri
  * - iOS Simulator / Web: localhost
  * - Android Emulator: 10.0.2.2
  */
@@ -38,10 +40,19 @@ export function getBackendBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
+
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const lanHost = hostUri.split(':')[0];
+    if (lanHost && lanHost !== 'localhost' && lanHost !== '127.0.0.1') {
+      return `http://${lanHost}:8003`;
+    }
+  }
+
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:8003';
   }
-  return 'http://localhost:8003';
+  return 'http://192.168.68.55:8003';
 }
 
 /**
