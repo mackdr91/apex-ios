@@ -1,24 +1,23 @@
 /**
  * Author: Domonick Mack
- * Date: 2026-11-02
- * Description: Root layout and theme provider for Apex iOS mobile application.
+ * Date: 2026-11-05
+ * Description: Root layout and theme provider for Apex Vault iOS application with native tab bar disabled in favor of the custom Floating Glass Nebula Pill navbar.
  */
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );
 }

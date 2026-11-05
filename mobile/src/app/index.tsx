@@ -1,7 +1,7 @@
 /**
  * Author: Domonick Mack
  * Date: 2026-11-05
- * Description: Primary home screen combining the sneaker slideshow background, Editorial Hero overlay, and full Sneaker Inventory Dashboard with photo capture and QR tag generation.
+ * Description: Primary screen orchestrating the Editorial Hero cover, My Sneaker Vault dashboard, QR Hub, and the custom Floating Glass Nebula Pill navbar.
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -26,6 +26,11 @@ import { EditorialHeroOverlay } from '@/components/home/EditorialHeroOverlay';
 import { SneakerCard } from '@/components/inventory/SneakerCard';
 import { AddSneakerModal } from '@/components/inventory/AddSneakerModal';
 import { SneakerDetailModal } from '@/components/inventory/SneakerDetailModal';
+import { QRHubView } from '@/components/inventory/QRHubView';
+import {
+  NebulaNavBar,
+  type NebulaTabId,
+} from '@/components/navigation/NebulaNavBar';
 import { inventoryApi } from '@/services/inventoryApi';
 import { formatCurrency } from '@/utils/format';
 import type {
@@ -46,7 +51,7 @@ const EMPTY_METRICS: InventoryMetrics = {
 };
 
 export default function HomeScreen() {
-  const [activeView, setActiveView] = useState<'hero' | 'dashboard'>('hero');
+  const [activeTab, setActiveTab] = useState<NebulaTabId>('home');
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [sneakers, setSneakers] = useState<Sneaker[]>([]);
@@ -88,31 +93,17 @@ export default function HomeScreen() {
     void loadInventory(false);
   }, [loadInventory]);
 
-  const switchToDashboard = () => {
+  const switchTab = (nextTab: NebulaTabId) => {
+    if (nextTab === activeTab) return;
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 240,
+      duration: 210,
       useNativeDriver: true,
     }).start(() => {
-      setActiveView('dashboard');
+      setActiveTab(nextTab);
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 280,
-        useNativeDriver: true,
-      }).start();
-    });
-  };
-
-  const switchToHero = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 240,
-      useNativeDriver: true,
-    }).start(() => {
-      setActiveView('hero');
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 280,
+        duration: 250,
         useNativeDriver: true,
       }).start();
     });
@@ -160,22 +151,36 @@ export default function HomeScreen() {
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
 
-      {/* Background switches between Sneaker Slideshow on Home and Black/Blue/Purple Nebula on Vault Dashboard */}
-      {activeView === 'hero' ? (
+      {/* Background switches between Sneaker Slideshow on Home and Black/Blue/Purple Nebula on Vault & QR Hub */}
+      {activeTab === 'home' ? (
         <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
       ) : (
         <NebulaBackground />
       )}
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
-        {activeView === 'hero' ? (
-          <EditorialHeroOverlay onEnterVault={switchToDashboard} />
+        {activeTab === 'home' ? (
+          <EditorialHeroOverlay onEnterVault={() => switchTab('vault')} />
+        ) : activeTab === 'qrhub' ? (
+          <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <QRHubView
+              sneakers={sneakers}
+              refreshing={refreshing}
+              onRefresh={() => void loadInventory(true)}
+              onSelectSneaker={(sneaker) => setSelectedSneaker(sneaker)}
+              onAddSneaker={() => {
+                setEditingSneaker(null);
+                setAddModalVisible(true);
+              }}
+              onBackToHome={() => switchTab('home')}
+            />
+          </SafeAreaView>
         ) : (
           <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <View style={styles.headerBar}>
               <TouchableOpacity
                 activeOpacity={0.75}
-                onPress={switchToHero}
+                onPress={() => switchTab('home')}
                 style={styles.backButton}
               >
                 <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
@@ -200,7 +205,7 @@ export default function HomeScreen() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 styles.scrollContent,
-                { paddingBottom: BottomTabInset + Spacing.five },
+                { paddingBottom: BottomTabInset + 100 },
               ]}
               refreshControl={
                 <RefreshControl
@@ -390,6 +395,11 @@ export default function HomeScreen() {
           </SafeAreaView>
         )}
       </Animated.View>
+
+      {/* Custom Floating Glass Nebula Pill Navbar (Hidden on Home Editorial Cover) */}
+      {activeTab !== 'home' ? (
+        <NebulaNavBar activeTab={activeTab} onSelectTab={switchTab} />
+      ) : null}
 
       {/* Add / Edit Sneaker Modal */}
       <AddSneakerModal
