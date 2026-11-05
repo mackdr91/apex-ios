@@ -178,7 +178,17 @@ export default function HomeScreen() {
 
               <Text style={styles.dashboardTitle}>My Sneaker Vault</Text>
 
-              <View style={styles.headerSpacer} />
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => {
+                  setEditingSneaker(null);
+                  setAddModalVisible(true);
+                }}
+                style={styles.addHeaderButton}
+                accessibilityLabel="Add sneaker"
+              >
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
 
             <ScrollView
@@ -434,9 +444,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     color: '#FFFFFF',
   },
-  headerSpacer: {
+  addHeaderButton: {
     width: 40,
     height: 40,
+    borderRadius: BorderRadius.pill,
+    backgroundColor: 'rgba(15, 15, 18, 0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     paddingHorizontal: Spacing.four,
