@@ -21,6 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing, BottomTabInset, BorderRadius } from '@/constants/theme';
 import { SneakerSlideshow } from '@/components/home/SneakerSlideshow';
+import { NebulaBackground } from '@/components/home/NebulaBackground';
 import { EditorialHeroOverlay } from '@/components/home/EditorialHeroOverlay';
 import { SneakerCard } from '@/components/inventory/SneakerCard';
 import { AddSneakerModal } from '@/components/inventory/AddSneakerModal';
@@ -159,8 +160,12 @@ export default function HomeScreen() {
     <View style={styles.rootContainer}>
       <StatusBar style="light" />
 
-      {/* Auto-Advancing Sneaker Photography Slideshow Background */}
-      <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
+      {/* Background switches between Sneaker Slideshow on Home and Black/Blue/Purple Nebula on Vault Dashboard */}
+      {activeView === 'hero' ? (
+        <SneakerSlideshow intervalMs={4500} fadeDurationMs={1200} />
+      ) : (
+        <NebulaBackground />
+      )}
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
         {activeView === 'hero' ? (
